@@ -1,11 +1,8 @@
 #include <array>
 #include <random>
-#include <algorithm>
 #include <SDL2/SDL.h>
 
-using uint = unsigned int;
-using uint8 = uint8_t;
-using uint32 = uint32_t;
+#define ELEMENT_COUNT (100)
 
 SDL_Window* window;
 SDL_Renderer* renderer;
@@ -16,9 +13,17 @@ T Map(T x, T minIn, T maxIn, T minOut, T maxOut)
     return (x - minIn) * (maxOut - minOut) / (maxIn - minIn) + minOut;
 }
 
-void Render(uint32* elements, int count)
+inline
+int Round(float value)
 {
-    constexpr auto ELEMENT_WIDTH = (800 / 100) - 1;
+    int result = static_cast<int>(roundf(value));
+
+    return result;
+}
+
+void Render(float* elements, int count, int left, int right, int pivot)
+{
+    constexpr auto ELEMENT_WIDTH = (960 / ELEMENT_COUNT);
 
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
     SDL_RenderClear(renderer);
@@ -27,15 +32,30 @@ void Render(uint32* elements, int count)
     {
         SDL_Rect rect = {};
         rect.x = i * ELEMENT_WIDTH;
-        rect.y = 0;
+        rect.y = 540;
         rect.w = ELEMENT_WIDTH;
-        rect.h = Map(elements[i], 0U, 100U, 100U, 500U);
+        rect.h = Round(-Map(elements[i], 0.0f, static_cast<float>(ELEMENT_COUNT), 100.0f, 540.0f));
 
-        SDL_RenderFillRect(renderer, &rect);
+        if (i == left || i == right)
+        {
+            SDL_SetRenderDrawColor(renderer, 0x11 , 0x11, 0xaa, 0xff);
+            SDL_RenderFillRect(renderer, &rect);
+            SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
+        }
+        else if (i == pivot)
+        {
+            SDL_SetRenderDrawColor(renderer, 0x11 , 0xaa, 0x11, 0xff);
+            SDL_RenderFillRect(renderer, &rect);
+            SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
+        }
+        else
+        {
+            SDL_RenderFillRect(renderer, &rect);
+        }
     }
 
     SDL_RenderPresent(renderer);
-    SDL_Delay(50);
+    SDL_Delay(40);
 }
 
 void Update()
@@ -50,16 +70,15 @@ void Update()
     }
 }
 
-void QuickSort(uint32* elements, int elementsCount, int left, int right)
+void QuickSort(float* elements, int elementsCount, int left, int right)
 {
     auto i = left;
     auto j = right;
     auto pivot = elements[(left + right) / 2];
-    uint32 tmp;
+    float tmp;
 
-    Render(elements, elementsCount);
+    Render(elements, elementsCount, left, right, pivot);
 
-    /* partition */
     while (i <= j)
     {
         while (elements[i] < pivot)
@@ -82,7 +101,7 @@ void QuickSort(uint32* elements, int elementsCount, int left, int right)
             j--;
         }
 
-        Render(elements, elementsCount);
+        Render(elements, elementsCount, left, right, pivot);
         Update();
     };
 
@@ -101,13 +120,28 @@ int main()
 {
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    window = SDL_CreateWindow("Visual Sort", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("Visual Sort", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 960, 540, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    std::array<uint32, 100> elements = {};
+    std::array<float, ELEMENT_COUNT> elements = {};
 
     std::srand(static_cast<unsigned>(std::time(0)));
-    std::generate(elements.begin(), elements.end(), []() { return std::rand() % 100; });
+
+    for (size_t i = 0; i < elements.size(); ++i)
+    {
+        auto val = static_cast<float>(std::rand() % ELEMENT_COUNT);
+
+        for (size_t j = 0; j < i; ++j)
+        {
+            if (val == elements[j])
+            {
+                val = static_cast<float>(std::rand() % ELEMENT_COUNT);
+                j = 0;
+            }
+        }
+
+        elements[i] = val;
+    }
 
     QuickSort(elements.__elems_, static_cast<int>(elements.size()), 0, static_cast<int>(elements.size()));
 
