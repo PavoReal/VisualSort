@@ -35,7 +35,8 @@ void Render(float* elements, int count, int left, int right, int pivot)
         rect.x = i * ELEMENT_WIDTH;
         rect.y = windowHeight;
         rect.w = ELEMENT_WIDTH;
-        rect.h = Round(-Map(elements[i], 0.0f, static_cast<float>(ELEMENT_COUNT), 100.0f, static_cast<float>(windowHeight)));
+        rect.h = Round(-Map(elements[i], 0.0f, static_cast<float>(ELEMENT_COUNT), 100.0f,
+                            static_cast<float>(windowHeight)));
 
         if (i == left || i == right)
         {
@@ -121,7 +122,8 @@ int main()
 {
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    window = SDL_CreateWindow("Visual Sort", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    window = SDL_CreateWindow("Visual Sort", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
+                              SDL_WINDOW_FULLSCREEN_DESKTOP);
     SDL_GetWindowSize(window, &windowWidth, &windowHeight);
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
