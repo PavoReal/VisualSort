@@ -6,6 +6,7 @@
 
 SDL_Window* window;
 SDL_Renderer* renderer;
+int windowWidth, windowHeight;
 
 template <typename T> constexpr inline
 T Map(T x, T minIn, T maxIn, T minOut, T maxOut)
@@ -23,7 +24,7 @@ int Round(float value)
 
 void Render(float* elements, int count, int left, int right, int pivot)
 {
-    constexpr auto ELEMENT_WIDTH = (960 / ELEMENT_COUNT);
+    const auto ELEMENT_WIDTH = (windowWidth / ELEMENT_COUNT);
 
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
     SDL_RenderClear(renderer);
@@ -32,9 +33,9 @@ void Render(float* elements, int count, int left, int right, int pivot)
     {
         SDL_Rect rect = {};
         rect.x = i * ELEMENT_WIDTH;
-        rect.y = 540;
+        rect.y = windowHeight;
         rect.w = ELEMENT_WIDTH;
-        rect.h = Round(-Map(elements[i], 0.0f, static_cast<float>(ELEMENT_COUNT), 100.0f, 540.0f));
+        rect.h = Round(-Map(elements[i], 0.0f, static_cast<float>(ELEMENT_COUNT), 100.0f, static_cast<float>(windowHeight)));
 
         if (i == left || i == right)
         {
@@ -77,7 +78,7 @@ void QuickSort(float* elements, int elementsCount, int left, int right)
     auto pivot = elements[(left + right) / 2];
     float tmp;
 
-    Render(elements, elementsCount, left, right, pivot);
+    Render(elements, elementsCount, left, right, static_cast<int>(pivot));
 
     while (i <= j)
     {
@@ -120,7 +121,9 @@ int main()
 {
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    window = SDL_CreateWindow("Visual Sort", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 960, 540, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("Visual Sort", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     std::array<float, ELEMENT_COUNT> elements = {};
@@ -149,6 +152,4 @@ int main()
     {
         Update();
     }
-
-    return 0;
 }
