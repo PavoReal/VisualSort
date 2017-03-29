@@ -1,4 +1,5 @@
 #include <array>
+#include <vector>
 #include <random>
 #include <SDL2/SDL.h>
 
@@ -14,7 +15,7 @@ T Map(T x, T minIn, T maxIn, T minOut, T maxOut)
     return (x - minIn) * (maxOut - minOut) / (maxIn - minIn) + minOut;
 }
 
-inline
+static inline
 int Round(float value)
 {
     int result = static_cast<int>(roundf(value));
@@ -22,44 +23,38 @@ int Round(float value)
     return result;
 }
 
-void Render(float* elements, int count, int left, int right, int pivot)
+struct Element
+{
+    float val;
+    int r, g, b;
+};
+
+using Elements = std::array<Element, ELEMENT_COUNT>;
+
+static
+void Render(Elements& elements)
 {
     const auto ELEMENT_WIDTH = (windowWidth / ELEMENT_COUNT);
 
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
     SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
-    for (auto i = 0; i < count; ++i)
+    for (size_t i = 0; i < elements.size(); ++i)
     {
-        SDL_Rect rect = {};
+        SDL_Rect rect;
         rect.x = i * ELEMENT_WIDTH;
         rect.y = windowHeight;
         rect.w = ELEMENT_WIDTH;
-        rect.h = Round(-Map(elements[i], 0.0f, static_cast<float>(ELEMENT_COUNT), 100.0f,
+        rect.h = Round(-Map(elements[i].val, 0.0f, static_cast<float>(elements.size()), 100.0f,
                             static_cast<float>(windowHeight)));
 
-        if (i == left || i == right)
-        {
-            SDL_SetRenderDrawColor(renderer, 0x11 , 0x11, 0xaa, 0xff);
-            SDL_RenderFillRect(renderer, &rect);
-            SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
-        }
-        else if (i == pivot)
-        {
-            SDL_SetRenderDrawColor(renderer, 0x11 , 0xaa, 0x11, 0xff);
-            SDL_RenderFillRect(renderer, &rect);
-            SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
-        }
-        else
-        {
-            SDL_RenderFillRect(renderer, &rect);
-        }
+        SDL_SetRenderDrawColor(renderer, elements[i].r, elements[i].g, elements[i].b, 0xff);
+        SDL_RenderFillRect(renderer, &rect);
     }
 
     SDL_RenderPresent(renderer);
-    SDL_Delay(40);
 }
 
+static
 void Update()
 {
     SDL_Event e;
@@ -72,23 +67,56 @@ void Update()
     }
 }
 
-void QuickSort(float* elements, int elementsCount, int left, int right)
+static
+void BubbleSort(Elements& elements, size_t left, size_t right)
+{
+    Render(elements);
+
+    for (size_t i = left; i < right - 1; ++i)
+    {
+        for (size_t j = left; j < elements.size() - i - 1; ++j)
+        {
+            if (elements[j].val > elements[j + 1].val)
+            {
+                std::swap(elements[j].val, elements[j + 1].val);
+
+                for (Element& e : elements)
+                {
+                    e.r = 0xff;
+                    e.g = 0xff;
+                    e.b = 0xff;
+                }
+
+                elements[j].r = 0x00;
+                elements[j].g = 0xee;
+                elements[j].b = 0x00;
+
+                Render(elements);
+                Update();
+            }
+        }
+   }    
+}
+
+static
+void QuickSort(Elements& elements, size_t left, size_t right)
 {
     auto i = left;
     auto j = right;
-    auto pivot = elements[(left + right) / 2];
-    float tmp;
+    auto pivot = elements[(left + right) / 2].val;
+    Element tmp;
 
-    Render(elements, elementsCount, left, right, static_cast<int>(pivot));
+    Render(elements);
+    SDL_Delay(20);
 
     while (i <= j)
     {
-        while (elements[i] < pivot)
+        while (elements[i].val < pivot)
         {
             i++;
         }
 
-        while (elements[j] > pivot)
+        while (elements[j].val > pivot)
         {
             j--;
         }
@@ -103,18 +131,47 @@ void QuickSort(float* elements, int elementsCount, int left, int right)
             j--;
         }
 
-        Render(elements, elementsCount, left, right, pivot);
+        for (Element& e : elements)
+        {
+            e.r = 0xff;
+            e.g = 0xff;
+            e.b = 0xff;
+        }
+
+        if (left > 0 && left < elements.size())
+        {
+            elements[left].r = 0x00;
+            elements[left].g = 0xee;
+            elements[left].b = 0x00;
+        }
+
+        if (right > 0 && right < elements.size())
+        {
+            elements[right].r = 0x00;
+            elements[right].g = 0xee;
+            elements[right].b = 0x00;
+        }
+
+        if (pivot > 0 && pivot < elements.size())
+        {
+            elements[pivot].r = 0xee;
+            elements[pivot].g = 0x00;
+            elements[pivot].g = 0x00;
+        }
+
+        Render(elements);
+        SDL_Delay(40);
         Update();
     };
 
     if (left < j)
     {
-        QuickSort(elements, elementsCount, left, j);
+        QuickSort(elements, left, j);
     }
 
     if (i < right)
     {
-        QuickSort(elements, elementsCount, i, right);
+        QuickSort(elements, i, right);
     }
 }
 
@@ -128,30 +185,47 @@ int main()
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    std::array<float, ELEMENT_COUNT> elements = {};
-
-    std::srand(static_cast<unsigned>(std::time(0)));
-
-    for (size_t i = 0; i < elements.size(); ++i)
-    {
-        auto val = static_cast<float>(std::rand() % ELEMENT_COUNT);
-
-        for (size_t j = 0; j < i; ++j)
-        {
-            if (val == elements[j])
-            {
-                val = static_cast<float>(std::rand() % ELEMENT_COUNT);
-                j = 0;
-            }
-        }
-
-        elements[i] = val;
-    }
-
-    QuickSort(elements.__elems_, static_cast<int>(elements.size()), 0, static_cast<int>(elements.size()));
-
+    unsigned pass = 0;
     for (;;)
     {
+        Elements elements = {};
+
+        for (Element& e : elements)
+        {
+            e.r = 0xff;
+            e.g = 0xff;
+            e.b = 0xff;
+        }
+
+        std::srand(static_cast<unsigned>(time(0)));
+
+        for (size_t i = 0; i < elements.size(); ++i)
+        {
+            auto val = static_cast<float>(std::rand() % ELEMENT_COUNT);
+
+            for (size_t j = 0; j < i; ++j)
+            {
+                if (val == elements[j].val)
+                {
+                    val = static_cast<float>(std::rand() % ELEMENT_COUNT);
+                    j = 0;
+                }
+            }
+
+            elements[i].val = val;
+        }
+
+        if (pass++ % 2)
+        {
+            QuickSort(elements, 0, elements.size());
+        }
+        else
+        {
+            BubbleSort(elements, 0, elements.size());
+        }
+
+        Update();
+        SDL_Delay(1000);
         Update();
     }
 }
