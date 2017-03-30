@@ -1,15 +1,19 @@
+#include <iostream>
 #include <array>
+#include <string>
 #include <vector>
 #include <random>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 #define ELEMENT_COUNT (50)
 
-SDL_Window* window;
-SDL_Renderer* renderer;
-int windowWidth, windowHeight;
+static SDL_Window* window;
+static SDL_Renderer* renderer;
+static int windowWidth, windowHeight;
+static TTF_Font* font;
 
-template <typename T> constexpr inline
+template <typename T> constexpr static inline
 T Map(T x, T minIn, T maxIn, T minOut, T maxOut)
 {
     return (x - minIn) * (maxOut - minOut) / (maxIn - minIn) + minOut;
@@ -44,8 +48,18 @@ struct Element
 using Elements = std::array<Element, ELEMENT_COUNT>;
 
 static
-void Render(Elements& elements)
+void Render(Elements& elements, const char* name)
 {
+    auto* nameSurface = TTF_RenderText_Solid(font, name, { 255, 255, 255, 255 });
+    auto  nameTexture = SDL_CreateTextureFromSurface(renderer, nameSurface);
+
+    SDL_FreeSurface(nameSurface);
+
+    SDL_Rect r;
+    r.x = r.y = 10;
+
+    SDL_QueryTexture(nameTexture, 0, 0, &r.w, &r.h);
+
     const auto ELEMENT_WIDTH = (windowWidth / ELEMENT_COUNT);
 
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
@@ -63,6 +77,7 @@ void Render(Elements& elements)
         SDL_RenderFillRect(renderer, &rect);
     }
 
+    SDL_RenderCopy(renderer, nameTexture, NULL, &r);
     SDL_RenderPresent(renderer);
 }
 
@@ -79,186 +94,231 @@ void Update()
     }
 }
 
-static
-void SelectionSort(Elements& elements, size_t, size_t)
+class Sort
 {
-    Render(elements);
+public:
+    Sort() { _name = ""; }
+    Sort(std::string name_) : _name(name_) {}
 
-    for (size_t i = 0; i < elements.size(); ++i)
-    {
-        for (size_t j = 0; j < elements.size(); ++j)
-        {
-            if (j < i)
-            {
-                elements[j].r = 0x00;
-                elements[j].g = 0xee;
-                elements[j].b = 0x00;
-            }
-            else
-            {
-                elements[j].r = 0xff;
-                elements[j].g = 0xff;
-                elements[j].b = 0xff;
-            }
-        }
+    virtual void
+    Run(Elements&, size_t, size_t) = 0; 
 
-        auto minIndex = i;
+    inline void 
+    SetName(std::string s) { _name = s; }
+        
+    inline std::string 
+    GetName() { return _name; }
 
-        elements[i].r = 0xee;
-        elements[i].g = 0x00;
-        elements[i].b = 0x00;
+protected:
+    std::string _name;
+};
 
-        for (auto j = i; j < elements.size(); ++j)
-        {
-            auto oldR = elements[j].r;
-            auto oldG = elements[j].g;
-            auto oldB = elements[j].b;
-
-            elements[j].r = 0x00;
-            elements[j].g = 0x00;
-            elements[j].b = 0xee;
-
-            if (elements[j] < elements[minIndex])
-            {
-                elements[minIndex].r = 0xff;
-                elements[minIndex].g = 0xff; 
-                elements[minIndex].b = 0xff;
-
-                minIndex = j;
-
-                oldR = 0xee;
-                oldG = 0;
-                oldB = 0;
-
-                elements[minIndex].r = 0xee;
-                elements[minIndex].g = 0x00; 
-                elements[minIndex].b = 0x00;
-            }
-
-
-            Render(elements);
-
-            elements[j].r = oldR;
-            elements[j].g = oldG;
-            elements[j].b = oldB;
-
-            Update();
-            SDL_Delay(45); 
-            Update();
-        }
-
-        std::swap(elements[i], elements[minIndex]);
-    }
-}
-
-static
-void BubbleSort(Elements& elements, size_t left, size_t right)
+class SelectionSort : public Sort
 {
-    Render(elements);
+public:
+    SelectionSort() { _name = "Selection Sort"; }
 
-    for (size_t i = left; i < right - 1; ++i)
+    void
+    Run(Elements& elements, size_t, size_t)
     {
-        for (size_t j = left; j < elements.size() - i - 1; ++j)
-        {
-            if (elements[j].val > elements[j + 1].val)
-            {
-                std::swap(elements[j].val, elements[j + 1].val);
+        Render(elements, _name.c_str());
 
-                for (Element& e : elements)
+        for (size_t i = 0; i < elements.size(); ++i)
+        {
+            for (size_t j = 0; j < elements.size(); ++j)
+            {
+                if (j < i)
                 {
-                    e.r = 0xff;
-                    e.g = 0xff;
-                    e.b = 0xff;
+                    elements[j].r = 0x00;
+                    elements[j].g = 0xee;
+                    elements[j].b = 0x00;
+                }
+                else
+                {
+                    elements[j].r = 0xff;
+                    elements[j].g = 0xff;
+                    elements[j].b = 0xff;
+                }
+            }
+
+            auto minIndex = i;
+
+            elements[i].r = 0xee;
+            elements[i].g = 0x00;
+            elements[i].b = 0x00;
+
+            for (auto j = i; j < elements.size(); ++j)
+            {
+                auto oldR = elements[j].r;
+                auto oldG = elements[j].g;
+                auto oldB = elements[j].b;
+
+                elements[j].r = 0x00;
+                elements[j].g = 0x00;
+                elements[j].b = 0xee;
+
+                if (elements[j] < elements[minIndex])
+                {
+                    elements[minIndex].r = 0xff;
+                    elements[minIndex].g = 0xff; 
+                    elements[minIndex].b = 0xff;
+
+                    minIndex = j;
+
+                    oldR = 0xee;
+                    oldG = 0;
+                    oldB = 0;
+
+                    elements[minIndex].r = 0xee;
+                    elements[minIndex].g = 0x00; 
+                    elements[minIndex].b = 0x00;
                 }
 
-                elements[j].r = 0x00;
-                elements[j].g = 0xee;
-                elements[j].b = 0x00;
+                Render(elements, _name.c_str());
 
-                Render(elements);
+                elements[j].r = oldR;
+                elements[j].g = oldG;
+                elements[j].b = oldB;
+
+                Update();
+                SDL_Delay(35);
                 Update();
             }
+
+            std::swap(elements[i], elements[minIndex]);
         }
-   }    
-}
-
-static
-void QuickSort(Elements& elements, size_t left, size_t right)
-{
-    auto i = left;
-    auto j = right;
-    auto pivot = elements[(left + right) / 2].val;
-
-    Render(elements);
-    SDL_Delay(20);
-
-    while (i <= j)
-    {
-        while (elements[i].val < pivot)
-        {
-            i++;
-        }
-
-        while (elements[j].val > pivot)
-        {
-            j--;
-        }
-
-        if (i <= j)
-        {
-            std::swap(elements[i], elements[j]);
-
-            i++;
-            j--;
-        }
-
-        for (Element& e : elements)
-        {
-            e.r = 0xff;
-            e.g = 0xff;
-            e.b = 0xff;
-        }
-
-        if (left > 0 && left < elements.size())
-        {
-            elements[left].r = 0x00;
-            elements[left].g = 0xee;
-            elements[left].b = 0x00;
-        }
-
-        if (right > 0 && right < elements.size())
-        {
-            elements[right].r = 0x00;
-            elements[right].g = 0xee;
-            elements[right].b = 0x00;
-        }
-
-        if (pivot > 0 && pivot < elements.size())
-        {
-            elements[pivot].r = 0xee;
-            elements[pivot].g = 0x00;
-            elements[pivot].g = 0x00;
-        }
-
-        Render(elements);
-        SDL_Delay(60);
-        Update();
     };
+};
 
-    if (left < j)
-    {
-        QuickSort(elements, left, j);
-    }
+class BubbleSort : public Sort
+{
+public:
+    BubbleSort() { _name = "Bubble Sort"; }
 
-    if (i < right)
+    void
+    Run(Elements& elements, size_t left, size_t right)
     {
-        QuickSort(elements, i, right);
-    }
-}
+        Render(elements, _name.c_str());
+
+        for (size_t i = left; i < right - 1; ++i)
+        {
+            for (size_t j = left; j < elements.size() - i - 1; ++j)
+            {
+                if (elements[j].val > elements[j + 1].val)
+                {
+                    std::swap(elements[j].val, elements[j + 1].val);
+
+                    for (Element& e : elements)
+                    {
+                        e.r = 0xff;
+                        e.g = 0xff;
+                        e.b = 0xff;
+                    }
+
+                    elements[j].r = 0x00;
+                    elements[j].g = 0xee;
+                    elements[j].b = 0x00;
+
+                    Render(elements, _name.c_str());
+                    Update();
+                }
+            }
+       }    
+    };
+};
+
+class QuickSort : public Sort
+{
+public:
+    QuickSort() { _name = "Quick Sort"; }
+
+    void
+    Run(Elements& elements, size_t left, size_t right)
+    {    
+        auto i = left;
+        auto j = right;
+        auto pivot = elements[(left + right) / 2].val;
+
+        Render(elements, _name.c_str());
+        SDL_Delay(20);
+
+        while (i <= j)
+        {
+            while (elements[i].val < pivot)
+            {
+                i++;
+            }
+
+            while (elements[j].val > pivot)
+            {
+                j--;
+            }
+
+            if (i <= j)
+            {
+                std::swap(elements[i], elements[j]);
+
+                i++;
+                j--;
+            }
+
+            for (Element& e : elements)
+            {
+                e.r = 0xff;
+                e.g = 0xff;
+                e.b = 0xff;
+            }
+
+            if (left > 0 && left < elements.size())
+            {
+                elements[left].r = 0x00;
+                elements[left].g = 0xee;
+                elements[left].b = 0x00;
+            }
+
+            if (right > 0 && right < elements.size())
+            {
+                elements[right].r = 0x00;
+                elements[right].g = 0xee;
+                elements[right].b = 0x00;
+            }
+
+            if (pivot > 0 && pivot < elements.size())
+            {
+                elements[pivot].r = 0xee;
+                elements[pivot].g = 0x00;
+                elements[pivot].g = 0x00;
+            }
+
+               
+            Render(elements, _name.c_str());
+            SDL_Delay(60);
+            Update();
+        }
+
+        if (left < j)
+        {
+            Run(elements, left, j);
+        }
+
+        if (i < right)
+        {
+            Run(elements, i, right);
+        }
+    };
+};
 
 int main()
 {
     SDL_Init(SDL_INIT_EVERYTHING);
+    TTF_Init();
+
+    font = TTF_OpenFont("./OpenSans-Regular.ttf", 32);
+
+    if (!font)
+    {
+        std::cerr << "Could not load font!" << std::endl;
+    }
 
     window = SDL_CreateWindow("Visual Sort", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
                               SDL_WINDOW_FULLSCREEN_DESKTOP);
@@ -268,15 +328,14 @@ int main()
 
     Elements elements = {};
 
-    std::array<void (*)(Elements&, size_t, size_t), 3> sortingFunctions;
-
-    sortingFunctions[0] = (*QuickSort);
-    sortingFunctions[1] = (*BubbleSort);
-    sortingFunctions[2] = (*SelectionSort);
+    std::array<Sort*, 3> sortingFunctions;
+    sortingFunctions[0] = new QuickSort();
+    sortingFunctions[1] = new BubbleSort();
+    sortingFunctions[2] = new SelectionSort();
 
     for (;;)
     {
-        for (auto func : sortingFunctions)
+        for (auto& func : sortingFunctions)
         {    
             std::srand(static_cast<unsigned>(time(0)));
 
@@ -300,7 +359,7 @@ int main()
                 elements[i].val = val;
             }
 
-            (*func)(elements, 0, elements.size());
+            func->Run(elements, 0, elements.size());
 
             Update();
             SDL_Delay(1000);

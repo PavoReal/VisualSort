@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/peacock/VisualSort/build",
+  "command": "/usr/bin/c++    -I/usr/include/SDL2   -std=gnu++14 -fno-exceptions -fno-rtti -Wall -Wextra -Wno-unused-value -O3 -DNDEBUG -O3 -flto   -o CMakeFiles/VisualSort.dir/src/main.cpp.o -c /home/peacock/VisualSort/src/main.cpp",
+  "file": "/home/peacock/VisualSort/src/main.cpp"
+}
+]
