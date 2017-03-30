@@ -188,7 +188,6 @@ void QuickSort(Elements& elements, size_t left, size_t right)
     auto i = left;
     auto j = right;
     auto pivot = elements[(left + right) / 2].val;
-    Element tmp;
 
     Render(elements);
     SDL_Delay(20);
@@ -207,9 +206,7 @@ void QuickSort(Elements& elements, size_t left, size_t right)
 
         if (i <= j)
         {
-            tmp = elements[i];
-            elements[i] = elements[j];
-            elements[j] = tmp;
+            std::swap(elements[i], elements[j]);
 
             i++;
             j--;
@@ -281,17 +278,14 @@ int main()
     {
         for (auto func : sortingFunctions)
         {    
-            for (Element& e : elements)
-            {
-                e.r = 0xff;
-                e.g = 0xff;
-                e.b = 0xff;
-            }
-
             std::srand(static_cast<unsigned>(time(0)));
 
             for (size_t i = 0; i < elements.size(); ++i)
             {
+                elements[i].r = 0xff;
+                elements[i].g = 0xff;
+                elements[i].b = 0xff;
+
                 auto val = static_cast<float>(std::rand() % ELEMENT_COUNT);
 
                 for (size_t j = 0; j < i; ++j)
