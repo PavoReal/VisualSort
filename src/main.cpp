@@ -113,6 +113,47 @@ protected:
     std::string _name;
 };
 
+class InsertionSort : public Sort
+{
+public:
+    InsertionSort() { _name = "Insertion Sort"; }
+
+    void
+    Run(Elements& elements, size_t, size_t)
+    {
+        Render(elements, _name.c_str());
+
+        size_t sortedIndex = 0;
+    
+        for (size_t i = sortedIndex; i < elements.size(); ++i)
+        {
+            auto j = i;
+
+            while ((j > 0) && (elements[j] < elements[j - 1]))
+            {
+                for (auto& e : elements)
+                {
+                    e.r = 0xff;
+                    e.g = 0xff;
+                    e.b = 0xff;
+                }
+
+                std::swap(elements[j], elements[j - 1]);
+                --j;
+
+                elements[j].r = 0xee;
+                elements[j].g = 0x00;
+                elements[j].b = 0x00;
+
+                Render(elements, _name.c_str());
+                Update();
+                SDL_Delay(25);
+                Update();
+            }
+        }
+    }
+};
+
 class SelectionSort : public Sort
 {
 public:
@@ -127,18 +168,9 @@ public:
         {
             for (size_t j = 0; j < elements.size(); ++j)
             {
-                if (j < i)
-                {
-                    elements[j].r = 0x00;
-                    elements[j].g = 0xee;
-                    elements[j].b = 0x00;
-                }
-                else
-                {
-                    elements[j].r = 0xff;
-                    elements[j].g = 0xff;
-                    elements[j].b = 0xff;
-                }
+                elements[j].r = 0xff;
+                elements[j].g = 0xff;
+                elements[j].b = 0xff;
             }
 
             auto minIndex = i;
@@ -328,10 +360,11 @@ int main()
 
     Elements elements = {};
 
-    std::array<Sort*, 3> sortingFunctions;
+    std::array<Sort*, 4> sortingFunctions;
     sortingFunctions[0] = new QuickSort();
     sortingFunctions[1] = new BubbleSort();
     sortingFunctions[2] = new SelectionSort();
+    sortingFunctions[3] = new InsertionSort();
 
     for (;;)
     {
