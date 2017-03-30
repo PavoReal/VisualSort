@@ -3,7 +3,7 @@
 #include <random>
 #include <SDL2/SDL.h>
 
-#define ELEMENT_COUNT (100)
+#define ELEMENT_COUNT (50)
 
 SDL_Window* window;
 SDL_Renderer* renderer;
@@ -27,6 +27,18 @@ struct Element
 {
     float val;
     int r, g, b;
+
+    friend inline bool 
+    operator <(const Element& lhs, const Element& rhs)
+    {
+        return lhs.val < rhs.val;
+    }
+
+    friend inline bool
+    operator >(const Element& lhs, const Element& rhs)
+    {
+        return lhs.val > rhs.val;
+    }
 };
 
 using Elements = std::array<Element, ELEMENT_COUNT>;
@@ -64,6 +76,78 @@ void Update()
         {
             exit(0);
         }
+    }
+}
+
+static
+void SelectionSort(Elements& elements, size_t, size_t)
+{
+    Render(elements);
+
+    for (size_t i = 0; i < elements.size(); ++i)
+    {
+        for (size_t j = 0; j < elements.size(); ++j)
+        {
+            if (j < i)
+            {
+                elements[j].r = 0x00;
+                elements[j].g = 0xee;
+                elements[j].b = 0x00;
+            }
+            else
+            {
+                elements[j].r = 0xff;
+                elements[j].g = 0xff;
+                elements[j].b = 0xff;
+            }
+        }
+
+        auto minIndex = i;
+
+        elements[i].r = 0xee;
+        elements[i].g = 0x00;
+        elements[i].b = 0x00;
+
+        for (auto j = i; j < elements.size(); ++j)
+        {
+            auto oldR = elements[j].r;
+            auto oldG = elements[j].g;
+            auto oldB = elements[j].b;
+
+            elements[j].r = 0x00;
+            elements[j].g = 0x00;
+            elements[j].b = 0xee;
+
+            if (elements[j] < elements[minIndex])
+            {
+                elements[minIndex].r = 0xff;
+                elements[minIndex].g = 0xff; 
+                elements[minIndex].b = 0xff;
+
+                minIndex = j;
+
+                oldR = 0xee;
+                oldG = 0;
+                oldB = 0;
+
+                elements[minIndex].r = 0xee;
+                elements[minIndex].g = 0x00; 
+                elements[minIndex].b = 0x00;
+            }
+
+
+            Render(elements);
+
+            elements[j].r = oldR;
+            elements[j].g = oldG;
+            elements[j].b = oldB;
+
+            Update();
+            SDL_Delay(45); 
+            Update();
+        }
+
+        std::swap(elements[i], elements[minIndex]);
     }
 }
 
@@ -160,7 +244,7 @@ void QuickSort(Elements& elements, size_t left, size_t right)
         }
 
         Render(elements);
-        SDL_Delay(40);
+        SDL_Delay(60);
         Update();
     };
 
@@ -185,47 +269,48 @@ int main()
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    unsigned pass = 0;
+    Elements elements = {};
+
+    std::array<void (*)(Elements&, size_t, size_t), 3> sortingFunctions;
+
+    sortingFunctions[0] = (*QuickSort);
+    sortingFunctions[1] = (*BubbleSort);
+    sortingFunctions[2] = (*SelectionSort);
+
     for (;;)
     {
-        Elements elements = {};
-
-        for (Element& e : elements)
-        {
-            e.r = 0xff;
-            e.g = 0xff;
-            e.b = 0xff;
-        }
-
-        std::srand(static_cast<unsigned>(time(0)));
-
-        for (size_t i = 0; i < elements.size(); ++i)
-        {
-            auto val = static_cast<float>(std::rand() % ELEMENT_COUNT);
-
-            for (size_t j = 0; j < i; ++j)
+        for (auto func : sortingFunctions)
+        {    
+            for (Element& e : elements)
             {
-                if (val == elements[j].val)
-                {
-                    val = static_cast<float>(std::rand() % ELEMENT_COUNT);
-                    j = 0;
-                }
+                e.r = 0xff;
+                e.g = 0xff;
+                e.b = 0xff;
             }
 
-            elements[i].val = val;
-        }
+            std::srand(static_cast<unsigned>(time(0)));
 
-        if (pass++ % 2)
-        {
-            QuickSort(elements, 0, elements.size());
-        }
-        else
-        {
-            BubbleSort(elements, 0, elements.size());
-        }
+            for (size_t i = 0; i < elements.size(); ++i)
+            {
+                auto val = static_cast<float>(std::rand() % ELEMENT_COUNT);
 
-        Update();
-        SDL_Delay(1000);
-        Update();
+                for (size_t j = 0; j < i; ++j)
+                {
+                    if (val == elements[j].val)
+                    {
+                        val = static_cast<float>(std::rand() % ELEMENT_COUNT);
+                        j = 0;
+                    }
+                }
+
+                elements[i].val = val;
+            }
+
+            (*func)(elements, 0, elements.size());
+
+            Update();
+            SDL_Delay(1000);
+            Update();
+        }
     }
 }
