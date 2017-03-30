@@ -366,37 +366,34 @@ int main()
     sortingFunctions[2] = new SelectionSort();
     sortingFunctions[3] = new InsertionSort();
 
-    for (;;)
-    {
-        for (auto& func : sortingFunctions)
-        {    
-            std::srand(static_cast<unsigned>(time(0)));
+    for (auto& func : sortingFunctions)
+    {    
+        std::srand(static_cast<unsigned>(time(0)));
 
-            for (size_t i = 0; i < elements.size(); ++i)
+        for (size_t i = 0; i < elements.size(); ++i)
+        {
+            elements[i].r = 0xff;
+            elements[i].g = 0xff;
+            elements[i].b = 0xff;
+
+            auto val = static_cast<float>(std::rand() % ELEMENT_COUNT);
+
+            for (size_t j = 0; j < i; ++j)
             {
-                elements[i].r = 0xff;
-                elements[i].g = 0xff;
-                elements[i].b = 0xff;
-
-                auto val = static_cast<float>(std::rand() % ELEMENT_COUNT);
-
-                for (size_t j = 0; j < i; ++j)
+                if (val == elements[j].val)
                 {
-                    if (val == elements[j].val)
-                    {
-                        val = static_cast<float>(std::rand() % ELEMENT_COUNT);
-                        j = 0;
-                    }
+                    val = static_cast<float>(std::rand() % ELEMENT_COUNT);
+                    j = 0;
                 }
-
-                elements[i].val = val;
             }
 
-            func->Run(elements, 0, elements.size());
-
-            Update();
-            SDL_Delay(1000);
-            Update();
+            elements[i].val = val;
         }
+
+        func->Run(elements, 0, elements.size());
+
+        Update();
+        SDL_Delay(1000);
+        Update();
     }
 }
