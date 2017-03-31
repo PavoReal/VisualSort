@@ -6,7 +6,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
-#define ELEMENT_COUNT (50)
+#define ELEMENT_COUNT (75)
 
 static SDL_Window* window;
 static SDL_Renderer* renderer;
@@ -345,7 +345,7 @@ int main()
     SDL_Init(SDL_INIT_EVERYTHING);
     TTF_Init();
 
-    font = TTF_OpenFont("./OpenSans-Regular.ttf", 32);
+    font = TTF_OpenFont("./OpenSans-Regular.ttf", 36);
 
     if (!font)
     {
@@ -366,7 +366,7 @@ int main()
     sortingFunctions[2] = new SelectionSort();
     sortingFunctions[3] = new InsertionSort();
 
-    for (auto& func : sortingFunctions)
+    for (auto& sortingFunc : sortingFunctions)
     {    
         std::srand(static_cast<unsigned>(time(0)));
 
@@ -390,7 +390,7 @@ int main()
             elements[i].val = val;
         }
 
-        func->Run(elements, 0, elements.size());
+        sortingFunc->Run(elements, 0, elements.size());
 
         Update();
         SDL_Delay(1000);
