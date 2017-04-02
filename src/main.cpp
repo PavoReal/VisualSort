@@ -8,18 +8,21 @@
 
 #define ELEMENT_COUNT (75)
 
-static SDL_Window* window;
-static SDL_Renderer* renderer;
-static int windowWidth, windowHeight;
-static TTF_Font* font;
+#define GLOBAL   static
+#define INTERNAL static
 
-template <typename T> constexpr static inline
+GLOBAL SDL_Window* window;
+GLOBAL SDL_Renderer* renderer;
+GLOBAL int windowWidth, windowHeight;
+GLOBAL TTF_Font* font;
+
+template <typename T> constexpr INTERNAL inline
 T Map(T x, T minIn, T maxIn, T minOut, T maxOut)
 {
     return (x - minIn) * (maxOut - minOut) / (maxIn - minIn) + minOut;
 }
 
-static inline
+INTERNAL inline
 int Round(float value)
 {
     int result = static_cast<int>(roundf(value));
@@ -41,22 +44,23 @@ struct Element
     friend inline bool
     operator >(const Element& lhs, const Element& rhs)
     {
-        return lhs.val > rhs.val;
+       return lhs.val > rhs.val;
     }
 };
 
 using Elements = std::array<Element, ELEMENT_COUNT>;
 
-static
+INTERNAL
 void Render(Elements& elements, const char* name)
 {
-    auto* nameSurface = TTF_RenderText_Solid(font, name, { 255, 255, 255, 255 });
+    auto* nameSurface = TTF_RenderText_Blended(font, name, { 255, 255, 255, 255 });
     auto  nameTexture = SDL_CreateTextureFromSurface(renderer, nameSurface);
 
     SDL_FreeSurface(nameSurface);
 
     SDL_Rect r;
-    r.x = r.y = 10;
+    r.x = 15;
+    r.y = 10;
 
     SDL_QueryTexture(nameTexture, 0, 0, &r.w, &r.h);
 
@@ -81,7 +85,7 @@ void Render(Elements& elements, const char* name)
     SDL_RenderPresent(renderer);
 }
 
-static
+INTERNAL
 void Update()
 {
     SDL_Event e;
@@ -94,11 +98,11 @@ void Update()
     }
 }
 
-class Sort
+class ISort
 {
 public:
-    Sort() { _name = ""; }
-    Sort(std::string name_) : _name(name_) {}
+    ISort() { _name = ""; }
+    ISort(std::string name_) : _name(name_) {}
 
     virtual void
     Run(Elements&, size_t, size_t) = 0; 
@@ -113,7 +117,7 @@ protected:
     std::string _name;
 };
 
-class InsertionSort : public Sort
+class InsertionSort : public ISort
 {
 public:
     InsertionSort() { _name = "Insertion Sort"; }
@@ -154,7 +158,7 @@ public:
     }
 };
 
-class SelectionSort : public Sort
+class SelectionSort : public ISort
 {
 public:
     SelectionSort() { _name = "Selection Sort"; }
@@ -222,7 +226,7 @@ public:
     };
 };
 
-class BubbleSort : public Sort
+class BubbleSort : public ISort
 {
 public:
     BubbleSort() { _name = "Bubble Sort"; }
@@ -259,7 +263,7 @@ public:
     };
 };
 
-class QuickSort : public Sort
+class QuickSort : public ISort
 {
 public:
     QuickSort() { _name = "Quick Sort"; }
@@ -360,7 +364,7 @@ int main()
 
     Elements elements = {};
 
-    std::array<Sort*, 4> sortingFunctions;
+    std::array<ISort*, 4> sortingFunctions;
     sortingFunctions[0] = new QuickSort();
     sortingFunctions[1] = new BubbleSort();
     sortingFunctions[2] = new SelectionSort();
